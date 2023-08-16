@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "targets.h": "c",
+        "adc.h": "c",
+        "main.h": "c",
+        "at32f421_scfg.h": "c",
+        "comparator.h": "c",
+        "at32f421_cmp.h": "c"
+    }
+}
