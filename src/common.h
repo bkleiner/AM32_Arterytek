@@ -7,7 +7,6 @@
 extern uint8_t eepromBuffer[176];
 extern uint16_t TIMER1_MAX_ARR;
 
-extern uint32_t gcr[30];
 extern uint16_t adjusted_input;
 extern uint32_t dma_buffer[64];
 extern uint8_t dshotcommand;
