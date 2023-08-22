@@ -32,14 +32,12 @@ const char gcr_encode_table[16] = {0b11001,
 
 char EDT_ARM_ENABLE = 0;
 char EDT_ARMED = 0;
-int shift_amount = 0;
-uint32_t gcrnumber;
-extern int e_com_time;
+
+extern uint32_t e_com_time;
 extern int zero_crosses;
 extern char send_telemetry;
 extern int smoothedinput;
 extern uint8_t max_duty_cycle_change;
-int dshot_full_number;
 extern char play_tone_flag;
 uint8_t command_count = 0;
 uint8_t last_command = 0;
@@ -209,29 +207,38 @@ void computeDshotDMA() {
 }
 
 void make_dshot_package() {
+  uint32_t telemetry_value;
+
   if (send_extended_dshot > 0) {
-    dshot_full_number = send_extended_dshot;
+    telemetry_value = send_extended_dshot;
     send_extended_dshot = 0;
   } else {
-    if (!running || e_com_time > 65535) {
-      e_com_time = 65535;
+    volatile uint16_t eprm = 0;
+    if (!running || e_com_time > 65408) {
+      eprm = 65408;
+    } else {
+      eprm = e_com_time;
     }
-    //	calculate shift amount for data in format eee mmm mmm mmm, first 1 found in first seven bits of data determines shift amount
+
+    // calculate shift amount for data in format eee mmm mmm mmm, first 1 found in first seven bits of data determines shift amount
     // this allows for a range of up to 65408 microseconds which would be shifted 0b111 (eee) or 7 times.
-    for (int i = 15; i >= 9; i--) {
-      if (e_com_time >> i == 1) {
+    uint32_t shift_amount = 0;
+    for (uint32_t i = 15; i >= 9; i--) {
+      if ((eprm >> i) == 1) {
         shift_amount = i + 1 - 9;
         break;
       } else {
         shift_amount = 0;
       }
     }
+
     // shift the commutation time to allow for expanded range and put shift amount in first three bits
-    dshot_full_number = ((shift_amount << 9) | (e_com_time >> shift_amount));
+    telemetry_value = ((shift_amount << 9) | (eprm >> shift_amount));
   }
+
   // calculate checksum
   uint16_t csum = 0;
-  uint16_t csum_data = dshot_full_number;
+  uint16_t csum_data = telemetry_value;
   for (int i = 0; i < 3; i++) {
     csum ^= csum_data; // xor data by nibbles
     csum_data >>= 4;
@@ -239,27 +246,26 @@ void make_dshot_package() {
   csum = ~csum; // invert it
   csum &= 0xf;
 
-  dshot_full_number = (dshot_full_number << 4) | csum; // put checksum at the end of 12 bit dshot number
+  telemetry_value = (telemetry_value << 4) | csum; // put checksum at the end of 12 bit dshot number
 
   // GCR RLL encode 16 to 20 bit
-
-  gcrnumber = gcr_encode_table[(dshot_full_number >> 12)] << 15                     // first set of four digits
-              | gcr_encode_table[(((1 << 4) - 1) & (dshot_full_number >> 8))] << 10 // 2nd set of 4 digits
-              | gcr_encode_table[(((1 << 4) - 1) & (dshot_full_number >> 4))] << 5  // 3rd set of four digits
-              | gcr_encode_table[(((1 << 4) - 1) & (dshot_full_number >> 0))];      // last four digits
+  const uint32_t gcr_val = gcr_encode_table[(telemetry_value >> 12)] << 15                     // first set of four digits
+                           | gcr_encode_table[(((1 << 4) - 1) & (telemetry_value >> 8))] << 10 // 2nd set of 4 digits
+                           | gcr_encode_table[(((1 << 4) - 1) & (telemetry_value >> 4))] << 5  // 3rd set of four digits
+                           | gcr_encode_table[(((1 << 4) - 1) & (telemetry_value >> 0))];      // last four digits
   // GCR RLL encode 20 to 21bit output
 
 #ifdef MCU_AT421
   gcr[1 + buffer_padding] = 78;
-  for (int i = 19; i >= 0; i--) {                                                                                  // each digit in gcrnumber
-    gcr[buffer_padding + 20 - i + 1] = ((((gcrnumber & 1 << i)) >> i) ^ (gcr[buffer_padding + 20 - i] >> 6)) * 78; // exclusive ored with number before it multiplied by 64 to match output timer.
+  for (int i = 19; i >= 0; i--) {                                                                                // each digit in gcr_val
+    gcr[buffer_padding + 20 - i + 1] = ((((gcr_val & 1 << i)) >> i) ^ (gcr[buffer_padding + 20 - i] >> 6)) * 78; // exclusive ored with number before it multiplied by 64 to match output timer.
   }
   gcr[buffer_padding] = 0;
 #endif
 #ifdef MCU_AT415
   gcr[1 + buffer_padding] = 97;
-  for (int i = 19; i >= 0; i--) {                                                                                  // each digit in gcrnumber
-    gcr[buffer_padding + 20 - i + 1] = ((((gcrnumber & 1 << i)) >> i) ^ (gcr[buffer_padding + 20 - i] >> 6)) * 97; // exclusive ored with number before it multiplied by 64 to match output timer.
+  for (int i = 19; i >= 0; i--) {                                                                                // each digit in gcr_val
+    gcr[buffer_padding + 20 - i + 1] = ((((gcr_val & 1 << i)) >> i) ^ (gcr[buffer_padding + 20 - i] >> 6)) * 97; // exclusive ored with number before it multiplied by 64 to match output timer.
   }
   gcr[buffer_padding] = 0;
 #endif

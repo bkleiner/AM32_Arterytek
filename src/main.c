@@ -408,7 +408,7 @@ uint16_t throttle_max_at_high_rpm = TIM1_AUTORELOAD;
 uint16_t commutation_intervals[6] = {0};
 uint32_t average_interval = 0;
 uint32_t last_average_interval;
-int e_com_time;
+uint32_t e_com_time;
 
 uint16_t ADC_smoothed_input = 0;
 uint8_t degrees_celsius;
