@@ -14,8 +14,6 @@
 
 uint8_t beep_volume;
 
-// uint8_t blueJayTuneBuffer[128] = {};
-
 void pause(uint16_t ms) {
   TMR1->c1dt = 0; // volume of the beep, (duty cycle) don't go above 25 out of 2000
   TMR1->c2dt = 0;
@@ -66,7 +64,7 @@ void playBlueJayTune() {
   uint16_t duration;
   float frequency;
   comStep(3);
-  // read_flash_bin(blueJayTuneBuffer , EEPROM_START_ADD + 48 , 128);
+
   for (int i = 52; i < 176; i += 2) {
     WDT->cmd = WDT_CMD_RELOAD;
     signaltimeout = 0;

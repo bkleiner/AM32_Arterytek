@@ -13,22 +13,24 @@
 
 int dpulse[16] = {0};
 
-const char gcr_encode_table[16] = {0b11001,
-                                   0b11011,
-                                   0b10010,
-                                   0b10011,
-                                   0b11101,
-                                   0b10101,
-                                   0b10110,
-                                   0b10111,
-                                   0b11010,
-                                   0b01001,
-                                   0b01010,
-                                   0b01011,
-                                   0b11110,
-                                   0b01101,
-                                   0b01110,
-                                   0b01111};
+static const char gcr_encode_table[16] = {
+    0b11001,
+    0b11011,
+    0b10010,
+    0b10011,
+    0b11101,
+    0b10101,
+    0b10110,
+    0b10111,
+    0b11010,
+    0b01001,
+    0b01010,
+    0b01011,
+    0b11110,
+    0b01101,
+    0b01110,
+    0b01111,
+};
 
 char EDT_ARM_ENABLE = 0;
 char EDT_ARMED = 0;
@@ -61,25 +63,6 @@ void computeDshotDMA() {
       dpulse[i] = ((dma_buffer[j + (i << 1) + 1] - dma_buffer[j + (i << 1)]) > (halfpulsetime));
     }
 
-    //
-    // #if defined MCU_AT421
-
-    //				if((dshot_frametime < 3500)&&(dshot_frametime > 2800)){
-    //
-    //				for (int i = 0; i < 16; i++){
-    //					dpulse[i] = ((dma_buffer[j + (i<<1) +1] - dma_buffer[j + (i<<1)]) / 100) ;
-    //
-    //				}
-    // #endif
-    // #if defined MCU_AT415
-
-    //				if((dshot_frametime < 5000)&&(dshot_frametime > 3000)){
-    //
-    //				for (int i = 0; i < 16; i++){
-    //					dpulse[i] = ((dma_buffer[j + (i<<1) +1] - dma_buffer[j + (i<<1)]) / 120) ;
-    //
-    //				}
-    // #endif
     uint8_t calcCRC = ((dpulse[0] ^ dpulse[4] ^ dpulse[8]) << 3 | (dpulse[1] ^ dpulse[5] ^ dpulse[9]) << 2 | (dpulse[2] ^ dpulse[6] ^ dpulse[10]) << 1 | (dpulse[3] ^ dpulse[7] ^ dpulse[11]));
     uint8_t checkCRC = (dpulse[12] << 3 | dpulse[13] << 2 | dpulse[14] << 1 | dpulse[15]);
 

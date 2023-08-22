@@ -590,7 +590,7 @@ float doPidCalculations(struct fastPID *pidnow, int actual, int target) {
 }
 
 void loadEEpromSettings() {
-  read_flash_bin(eepromBuffer, EEPROM_START_ADD, 176);
+  eeprom_read(eepromBuffer, 176);
 
   if (eepromBuffer[17] == 0x01) {
     dir_reversed = 1;
@@ -781,7 +781,6 @@ void loadEEpromSettings() {
 }
 
 void saveEEpromSettings() {
-
   eepromBuffer[1] = eeprom_layout_version;
   if (dir_reversed == 1) {
     eepromBuffer[17] = 0x01;
@@ -815,7 +814,7 @@ void saveEEpromSettings() {
     eepromBuffer[22] = 0x00;
   }
   eepromBuffer[23] = advance_level;
-  save_flash_nolib(eepromBuffer, 176, EEPROM_START_ADD);
+  eeprom_write(eepromBuffer, 176);
 }
 
 uint32_t getSmoothedCurrent() {
@@ -1237,9 +1236,6 @@ void tenKhzRoutine() {
   }
   average_interval = e_com_time / 3;
   if (desync_check && zero_crosses > 10) {
-    //	if(average_interval < last_average_interval){
-    //
-    //	}
     if ((getAbsDif(last_average_interval, average_interval) > average_interval >> 1) && (average_interval < 2000)) { // throttle resitricted before zc 20.
       zero_crosses = 0;
       desync_happened++;
@@ -1251,18 +1247,8 @@ void tenKhzRoutine() {
       last_duty_cycle = min_startup_duty / 2;
     }
     desync_check = 0;
-    //	}
     last_average_interval = average_interval;
   }
-  // #ifndef MCU_F031
-  // if(commutation_interval > 400){
-  //	   NVIC_SetPriority(IC_DMA_IRQ_NAME, 0);
-  //	   NVIC_SetPriority(ADC_CMP_IRQn, 1);
-  // }else{
-  //	NVIC_SetPriority(IC_DMA_IRQ_NAME, 1);
-  //	NVIC_SetPriority(ADC_CMP_IRQn, 0);
-  // }
-  // #endif   //mcu f031
 
 #endif // ndef brushed_mode
 
@@ -1277,18 +1263,8 @@ void tenKhzRoutine() {
     send_telemetry = 0;
 #endif
   }
-#if defined(FIXED_DUTY_MODE) || defined(FIXED_SPEED_MODE)
 
-//		if(INPUT_PIN_PORT->IDR & INPUT_PIN){
-//			signaltimeout ++;
-//			if(signaltimeout > 10000){
-//				NVIC_SystemReset();
-//			}
-//		}else{
-//			signaltimeout = 0;
-//		}
-#else
-
+#if !defined(FIXED_DUTY_MODE) && !defined(FIXED_SPEED_MODE)
   signaltimeout++;
 
   if (signaltimeout > 5000) { // quarter second timeout when armed half second for servo;
